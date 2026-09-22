@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title> Congratulations Page Design By WebJourney - Html Template </title>
     <style>
     .congratulation-wrapper {
@@ -62,7 +60,6 @@
     }
     </style>
 </head>
-
 <body>
     <!-- Congratulations area start -->
     <div class="congratulation-area text-center mt-5">
@@ -75,6 +72,5 @@
             </div>
         </div>
     </div>
-    <!-- Congratulations area end -->
 </body>
 </html>
