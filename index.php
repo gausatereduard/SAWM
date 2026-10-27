@@ -68,6 +68,9 @@
                 <div class="congratulation-contents center-text">
                     <h4 class="congratulation-contents-title"> Public page! </h4>
                     <p class="congratulation-contents-para"> Everyone can see it. </p>
+                    <div class="btn-wrapper">
+                        <a class="cmn-btn btn-bg-1" href="guestbook.php">Open guestbook</a>
+                    </div>
                 </div>
             </div>
         </div>
