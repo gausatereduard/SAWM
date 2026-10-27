@@ -21,8 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($password === '') {
         $errors[] = 'Password is required.';
-    } elseif (strlen($password) < 4 || strlen($password) > 72) {
-        $errors[] = 'Password must be 4-72 characters.';
+    } elseif (strlen($password) > 72) {
+        $errors[] = 'Password must be at most 72 characters.';
     }
 
     if ($errors === []) {
@@ -44,6 +44,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         required minlength="3" maxlength="20" pattern="[a-zA-Z0-9_]+"
         value="<?= htmlspecialchars($username, ENT_QUOTES, 'UTF-8') ?>" />
     <input name="password" type="password" placeholder="Password"
-        required minlength="4" maxlength="72" />
+        required minlength="1" maxlength="72" />
     <input type="submit" value="Login" />
 </form>

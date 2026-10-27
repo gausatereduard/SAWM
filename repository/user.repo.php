@@ -37,7 +37,7 @@ function getUserByUsername(string $username): ?array
 
 function getAllUsers(): array
 {
-    return getDB()->query('SELECT id, username, password_hash, role FROM users ORDER BY id')->fetchAll();
+    return getDB()->query('SELECT id, username, password_hash, role, created_at FROM users ORDER BY id')->fetchAll();
 }
 
 function updateUser(int $id, ?string $username = null, ?string $passwordHash = null, ?string $role = null): bool

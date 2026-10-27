@@ -2,11 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../repository/user.repo.php';
-
-function hashPassword(string $password): string
-{
-    return password_hash($password, PASSWORD_DEFAULT);
-}
+require_once __DIR__ . '/password.helper.php';
 
 function login(string $username, string $password): bool
 {
@@ -15,8 +11,14 @@ function login(string $username, string $password): bool
     }
 
     $user = getUserByUsername($username);
-    if ($user === null || !password_verify($password, $user['password_hash'])) {
+    if ($user === null || !verifyPassword($password, $user['password_hash'])) {
         return false;
+    }
+
+    // Upgrade legacy plaintext / MD5 / SHA-1 rows, or a hash with obsolete
+    // parameters, as soon as the user proves the password.
+    if (passwordNeedsRehash($user['password_hash'])) {
+        updateUser((int) $user['id'], null, hashPassword($password));
     }
 
     // Mitigate session fixation.

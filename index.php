@@ -75,5 +75,30 @@
             </div>
         </div>
     </div>
+
+    <!-- Lab 4 links -->
+    <div class="congratulation-area text-center mt-5">
+        <div class="container">
+            <div class="congratulation-wrapper">
+                <h4 class="congratulation-contents-title"> Lab 4 — Protecting Confidential Data </h4>
+                <ul style="text-align: left; line-height: 1.9; margin-top: 15px;">
+                    <li><a href="users.php">Users table / password storage</a></li>
+                    <li><a href="hash-demo.php">MD5 / SHA-1 vs salted hashes</a></li>
+                    <li><a href="migrate_passwords.php">Migrate plaintext passwords</a></li>
+                    <li>
+                        Secure:
+                        <a href="secure/signup.php">signup</a> /
+                        <a href="secure/login.php">login</a>
+                    </li>
+                    <li>
+                        Vulnerable (demo only):
+                        <a href="vulnerable/signup.php">signup</a> /
+                        <a href="vulnerable/login.php">login</a>
+                    </li>
+                    <li><a href="guestbook.php">Guestbook (Lab 3)</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
