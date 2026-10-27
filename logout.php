@@ -1,8 +1,8 @@
 <?php
-session_start();
-require_once __DIR__ . '/helper/auth.helper.php';
+declare(strict_types=1);
+
+require_once __DIR__ . '/helper/bootstrap.php';
 
 logout();
-header('Location: index.php');
-exit;
-?>
+
+redirect(url('auth/login.php') . '?logged_out=1');

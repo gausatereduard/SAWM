@@ -1,76 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <title> Congratulations Page Design By WebJourney - Html Template </title>
-    <style>
-    .congratulation-wrapper {
-        max-width: 550px;
-        margin-inline: auto;
-        -webkit-box-shadow: 0 0 20px #f3f3f3;
-        box-shadow: 0 0 20px #f3f3f3;
-        padding: 30px 20px;
-        background-color: #fff;
-        border-radius: 10px;
-    }
+<?php
+declare(strict_types=1);
 
-    .congratulation-contents.center-text .congratulation-contents-icon {
-        margin-inline: auto;
-    }
-    .congratulation-contents-icon {
-        display: -webkit-box;
-        display: -ms-flexbox;
-        display: flex;
-        -webkit-box-align: center;
-        -ms-flex-align: center;
-        align-items: center;
-        -webkit-box-pack: center;
-        -ms-flex-pack: center;
-        justify-content: center;
-        height: 100px;
-        width: 100px;
-        background-color: #65c18c;
-        color: #fff;
-        font-size: 50px;
-        border-radius: 50%;
-        margin-bottom: 30px;
-    }
-    .congratulation-contents-title {
-        font-size: 32px;
-        line-height: 36px;
-        margin: -6px 0 0;
-    }
-    .congratulation-contents-para {
-        font-size: 16px;
-        line-height: 24px;
-        margin-top: 15px;
-    }
-    .btn-wrapper {
-        display: block;
-    }
-    .cmn-btn.btn-bg-1 {
-        background: #6176f6;
-        color: #fff;
-        border: 2px solid transparent;
-        border-radius:3px;
-        text-decoration: none;
-        padding:5px;
-    }
-    </style>
-</head>
-<body>
-    <!-- Congratulations area start -->
-    <div class="congratulation-area text-center mt-5">
-        <div class="container">
-            <div class="congratulation-wrapper">
-                <div class="congratulation-contents center-text">
-                    <h4 class="congratulation-contents-title"> Public page! </h4>
-                    <p class="congratulation-contents-para"> Everyone can see it. </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</body>
-</html>
+require_once __DIR__ . '/helper/bootstrap.php';
+
+$loggedIn = isAuthenticated();
+
+renderHeader('Public page');
+?>
+<h1>Public page</h1>
+<p class="lead">Everyone can see this page — no session required.</p>
+
+<div class="card">
+    <h2>Restricted areas</h2>
+    <p class="muted">Both areas are protected on the server. Knowing the URL is not enough: without a valid
+        session you are redirected to the sign-in page.</p>
+    <?php if ($loggedIn): ?>
+        <p>
+            <a class="btn" href="<?= e(dashboardUrl()) ?>">Open my dashboard</a>
+            <a class="btn btn-secondary" href="<?= e(url('logout.php')) ?>">Log out</a>
+        </p>
+        <p class="small muted">Signed in as <strong><?= e((string) ($_SESSION['username'] ?? '')) ?></strong>
+            with role <strong><?= e(roleLabel((string) (currentRole() ?? ''))) ?></strong>.</p>
+    <?php else: ?>
+        <p>
+            <a class="btn" href="<?= e(url('auth/login.php')) ?>">Sign in</a>
+            <a class="btn btn-secondary" href="<?= e(url('auth/signup.php')) ?>">Sign up</a>
+        </p>
+    <?php endif; ?>
+</div>
+<?php renderFooter();

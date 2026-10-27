@@ -1,69 +1,105 @@
-# Lab 2 — SQL Injection Demo
+# Lab 5 — Controlling Access to a Web Application
 
-## 1. What this project is
+Minimal PHP 8 + SQLite application (no framework, no Composer) for the web-security course.
+The lab requirements are in [`todo.md`](todo.md); the walkthrough with expected results is in
+[`docs/REPORT.md`](docs/REPORT.md).
 
-A minimal PHP login/signup app (SQLite, no dependencies) built for a web-security course to compare **secure** vs **SQL-injectable** authentication side by side.
+## 1. Layout
 
-- Public page: `index.php`
-- Restricted page: `protected.php` (requires `$_SESSION['userId']`)
-- Secure forms: `secure/login.php`, `secure/signup.php`
-- Vulnerable forms: `vulnerable/login.php`, `vulnerable/signup.php`
-- Shared layers: `helper/db.helper.php` (PDO + schema), `helper/auth.helper.php` (`hashPassword()`, `login()`, `logout()`), `repository/user.repo.php` (CRUD)
-- DB: `database.sqlite`, table `users(id, username UNIQUE, password_hash, role, created_at)` (auto-created on first `getDB()` call)
+```
+index.php                     public page (no session required)
+auth/login.php                sign in, redirects by role
+auth/signup.php               sign up (always creates a manager)
+logout.php                    destroys the session and redirects to the login page
 
-Run locally:
+admin/dashboard.php           administrator workspace          role: administrator
+admin/users/index.php         list accounts                    permission: users.view
+admin/users/edit.php          edit an account                  permission: users.update
+admin/users/delete.php        delete an account (POST)         permission: users.delete
+
+manager/dashboard.php         manager workspace                role: manager
+manager/reports.php           feature 1: reports               permission: reports.view
+manager/profile.php           feature 2: own profile           permission: profile.update
+
+errors/403.php                403 Access denied page
+
+helper/constants.php          role and permission names
+helper/bootstrap.php          loads every layer, starts the hardened session
+helper/session.helper.php     session lifecycle, DB-backed sessions, flash, url(), redirect()
+helper/auth.helper.php        login/logout, requireLogin/requireRole/requirePermission, can()
+helper/csrf.helper.php        CSRF token generation and verification
+helper/validation.helper.php  shared username/password rules
+helper/view.helper.php        HTML layout (header/footer, escaping helper)
+helper/db.helper.php          PDO connection, schema, migrations, seed data
+repository/user.repo.php      user CRUD and aggregate queries
+repository/role.repo.php      roles and role → permissions
+repository/session.repo.php   server-side session records
+
+database.sqlite               SQLite database
+```
+
+The Lab 2 `vulnerable/` folder and the `secure/` folder name are gone; authentication pages now live
+in `auth/`, and `protected.php` (which dumped the password hash) was replaced by the role dashboards.
+
+## 2. Requirements
+
+- PHP 8.1 or newer with the `pdo_sqlite` extension
+- No other dependency
 
 ```bash
 php -S localhost:8000
-# open http://localhost:8000/vulnerable/signup.php  (or /secure/...)
+# http://localhost:8000/
 ```
 
-Note: `secure/` stores **bcrypt hashes**, `vulnerable/` stores **plaintext** in the same column — accounts created in one variant will not log in via the other.
-Create the demo account through the same variant you test.
+If the project is served from a subfolder (XAMPP `htdocs/lab5`), every internal link still works:
+`url()` derives the base path from `DOCUMENT_ROOT`.
 
-## 2. Where the SQL injection lives
+## 3. Demo accounts
 
-`vulnerable/login.php:11` builds SQL by string interpolation:
+| Username  | Password       | Role            |
+|-----------|----------------|-----------------|
+| `admin`   | `Admin123!`    | `administrator` |
+| `manager` | `Manager123!`  | `manager`       |
 
-```php
-$sql = "SELECT id, username, password_hash, role FROM users WHERE username = '$username' AND password_hash = '$password'";
-$user = getDB()->query($sql)->fetch();
-```
+Both are created automatically on an empty database (`seedDemoAccounts()`), with bcrypt hashes.
+Signing up through `auth/signup.php` always creates a `manager`; administrators are only created by an
+administrator.
 
-User input becomes part of the query's *code*. A quote in the input breaks out of the string literal and changes the query logic. Same flaw in `vulnerable/signup.php:11` (`INSERT ... VALUES ('$username', '$password', 'user')`).
+## 4. Roles and permissions
 
-The secure variant (`secure/login.php` → `getUserByUsername()` with `prepare()` + bound params) never concatenates input, and its allowlist regex `/^[a-zA-Z0-9_]+$/` rejects quotes entirely.
+| Permission       | administrator | manager |
+|------------------|:-------------:|:-------:|
+| `users.view`     | ✔             |         |
+| `users.update`   | ✔             |         |
+| `users.delete`   | ✔             |         |
+| `reports.view`   |               | ✔       |
+| `profile.update` |               | ✔       |
 
-## 3. How to test it (step by step)
+Permissions are granted per role in `role_permissions` and copied into `$_SESSION['permissions']` at
+login. They are checked server-side with `requirePermission()`; the UI only reflects the decision.
 
-**Setup:**
+## 5. Database
 
-1. Start the server and open `http://localhost:8000/vulnerable/signup.php`.
-2. Register a normal user, e.g. `alice` / `secret123`.
-3. Note you land on `vulnerable/login.php` afterwards.
+| Table              | Purpose |
+|--------------------|---------|
+| `users`            | accounts; `role` is `administrator` or `manager` (`CHECK` constraint, FK to `roles`) |
+| `roles`            | the two roles and their display labels |
+| `permissions`      | permission catalogue |
+| `role_permissions` | role → permission mapping |
+| `sessions`         | server-side session records (id, user_id, created_at, last_seen_at, expires_at) |
+| `app_meta`         | bootstrap bookkeeping (`demo_seeded`) |
 
-**Test A — authentication bypass (login):**
+`initDb()` creates everything on first use. On a database created by Lab 2 it also rebuilds `users`
+(adding the `CHECK` constraint and the `manager` default), maps `user` → `manager` / `admin` →
+`administrator`, and drops legacy plaintext password rows, which can never authenticate.
 
-1. Open `http://localhost:8000/vulnerable/login.php`.
-2. Username: `' OR '1'='1' --` (password: anything, e.g. `x`).
-3. Submit → you land on `protected.php` as the first user in the table, without knowing any password.
+## 6. Security controls
 
-Why it works — the query becomes:
-
-```sql
-SELECT ... WHERE username = '' OR '1'='1' --' AND password_hash = 'x'
-```
-
-`'1'='1'` is always true, and `--` comments out the password check, so the `WHERE` matches every row and `fetch()` returns the first one.
-
-**Test B — privilege escalation (signup), optional:**
-
-1. Open `http://localhost:8000/vulnerable/signup.php`.
-2. Username: `mallory', 'x', 'admin') --` , password: anything.
-3. The `INSERT` becomes `VALUES ('mallory', 'x', 'admin') --', ...)` — the row is created with `role='admin'` instead of `'user'`.
-
-**Test C — confirm the secure forms resist:**
-
-1. Repeat Test A against `http://localhost:8000/secure/login.php`.
-2. The browser's `pattern` attribute blocks the quote client-side; disabling that, server-side `preg_match` rejects it with "Username may contain only letters, digits and underscore."
-3. Even without validation, the prepared statement treats the payload as a literal string, so no row matches and you get "Invalid username or password."
+- Authentication required on every restricted page (`requireLogin()`), enforced before any output.
+- Role checks (`requireRole()`) and permission checks (`requirePermission()`) return **403**, not a redirect.
+- Server-side sessions: `sessions` row per login, id regenerated on login, 30 min idle / 8 h absolute
+  expiry, deleted on logout and on password change, revocable from the database.
+- Cookie flags: `HttpOnly`, `SameSite=Lax`, `Secure` when HTTPS is used, `session.use_strict_mode`.
+- CSRF token on every POST form (login, signup, edit, delete, profile).
+- Prepared statements everywhere; output escaped with `htmlspecialchars()`.
+- Deletion is POST-only, and an administrator cannot delete or demote their own account.
